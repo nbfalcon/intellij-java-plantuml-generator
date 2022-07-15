@@ -3,9 +3,6 @@ package org.nbfalcon.javagenplantuml
 import com.intellij.psi.*
 import com.intellij.psi.PsiModifier.ModifierConstant
 
-val PsiType.presentableCanonicalText: String
-    get() = canonicalText.removePrefix("java.lang.")
-
 val PsiModifierListOwner.visibility
     get() = modifierList?.let { mL ->
         when {
@@ -21,8 +18,8 @@ val PsiMethod.declarationSignature: String
         val generics =
             if (typeParameters.isNotEmpty()) "<" + typeParameters.joinToString(", ") { p -> p.name!! } + ">"
             else ""
-        val args = parameters.joinToString(", ") { p -> (p.type as PsiType).presentableCanonicalText + " " + p.name!! }
-        val ret = returnType?.let { rT -> rT.presentableCanonicalText + " " } ?: ""
+        val args = parameters.joinToString(", ") { p -> (p.type as PsiType).presentableText + " " + p.name!! }
+        val ret = returnType?.let { rT -> rT.presentableText + " " } ?: ""
 
         return "$ret$name$generics($args)"
     }
@@ -35,7 +32,7 @@ fun convertMember(m: PsiMember): UMLAttribute {
 
     val text = when (m) {
         is PsiMethod -> m.declarationSignature
-        is PsiField -> m.type.presentableCanonicalText + " " + m.name
+        is PsiField -> m.type.presentableText + " " + m.name
         else -> throw IllegalArgumentException("$m is not a method or field")
     }
 
@@ -56,13 +53,21 @@ val PsiArrayType.deArray: PsiType
         return a
     }
 
+val PsiType.qualifiedNameWithoutGenerics: String
+    get() {
+        val p = canonicalText.removePrefix("java.lang.")
+        val generics = p.indexOf('<')
+        return if (generics != -1) p.substring(0, generics)
+        else p
+    }
+
 fun convertRelationalField(m: PsiField): UMLRelation {
     return when (val ty = m.type) {
         is PsiArrayType -> UMLRelation(
-            ty.deArray.presentableCanonicalText, m.name, UMLRelation.Multiplicity.C(1), UMLRelation.Multiplicity.N
+            ty.deArray.qualifiedNameWithoutGenerics, m.name, UMLRelation.Multiplicity.C(1), UMLRelation.Multiplicity.N
         )
         else -> UMLRelation(
-            ty.presentableCanonicalText,
+            ty.qualifiedNameWithoutGenerics,
             m.name,
             UMLRelation.Multiplicity.C(1),
             UMLRelation.Multiplicity.C(1)
@@ -77,12 +82,19 @@ fun isBasicField(field: PsiField): Boolean =
     field.type is PsiPrimitiveType || field.type.canonicalText.startsWith("java.lang.")
             || field.modifierList?.hasModifierProperty(PsiModifier.STATIC) == true
 
-fun convertInheritance(clazz: PsiClass): UMLInheritance {
-    return if (clazz.isInterface || clazz.modifierList?.hasModifierProperty(PsiModifier.ABSTRACT) == true) {
-        UMLInheritance(clazz.qualifiedName!!, UMLInheritance.InheritanceType.ABSTRACT)
-    } else {
-        UMLInheritance(clazz.qualifiedName!!, UMLInheritance.InheritanceType.EXTENDS)
+val PsiClass.qualifiedNameWithoutGenerics: String?
+    get() = qualifiedName?.let { qn ->
+        val generics = qn.indexOf('<')
+
+        if (generics != -1) qn.substring(0, generics)
+        else qn
     }
+
+fun convertInheritance(clazz: PsiClass): UMLInheritance {
+    val type = if (clazz.isInterface || clazz.modifierList?.hasModifierProperty(PsiModifier.ABSTRACT) == true) {
+        UMLInheritance.InheritanceType.ABSTRACT
+    } else UMLInheritance.InheritanceType.EXTENDS
+    return UMLInheritance(clazz.qualifiedNameWithoutGenerics!!, type)
 }
 
 val PsiClass.classType: UMLClass.ClassType
