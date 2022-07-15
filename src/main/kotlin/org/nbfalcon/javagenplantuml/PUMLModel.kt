@@ -89,7 +89,8 @@ class UMLClass(
 
         var attributesS = attributes.stream().map { attr -> "\t" + attr.toPlantUML() }.collect(Collectors.joining("\n"))
         if (attributes.isNotEmpty()) attributesS += "\n"
-        val methodsS = methods.stream().map { attr -> "\t" + attr.toPlantUML() }.collect(Collectors.joining("\n"))
+        var methodsS = methods.stream().map { attr -> "\t" + attr.toPlantUML() }.collect(Collectors.joining("\n"))
+        if (methods.isNotEmpty()) methodsS += "\n"
 
         var relationsS = relations.stream().map { r -> r.toPlantUML(name) }.collect(Collectors.joining("\n"))
         var inheritanceS = inherits.stream().map { i -> i.toPlantUML(name) }.collect(Collectors.joining("\n"))
@@ -97,6 +98,6 @@ class UMLClass(
         if (relationsS.isNotEmpty()) relationsS = "\n" + relationsS
         if (inheritanceS.isNotEmpty()) inheritanceS = "\n" + inheritanceS
 
-        return "$prefix \"$name\" {\n$attributesS$methodsS\n}$relationsS$inheritanceS\n"
+        return "$prefix \"$name\" {\n$attributesS$methodsS}$relationsS$inheritanceS\n"
     }
 }
