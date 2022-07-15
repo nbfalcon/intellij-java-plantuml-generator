@@ -69,8 +69,12 @@ fun convertRelationalField(m: PsiField): UMLRelation {
     }
 }
 
-fun isBasicPrimitive(field: PsiField): Boolean =
+/**
+ * Just a field and not a relation.
+ */
+fun isBasicField(field: PsiField): Boolean =
     field.type is PsiPrimitiveType || field.type.canonicalText.startsWith("java.lang.")
+            || field.modifierList?.hasModifierProperty(PsiModifier.STATIC) == true
 
 fun convertInheritance(clazz: PsiClass): UMLInheritance {
     return if (clazz.isInterface || clazz.modifierList?.hasModifierProperty(PsiModifier.ABSTRACT) == true) {
@@ -91,8 +95,8 @@ val PsiClass.classType: UMLClass.ClassType
     }
 
 fun javaPsi2UML(clazz: PsiClass): UMLClass {
-    val fields = clazz.fields.filter(::isBasicPrimitive).map(::convertMember)
-    val relations = clazz.fields.filter { !isBasicPrimitive(it) }.map { convertRelationalField(it) }
+    val fields = clazz.fields.filter(::isBasicField).map(::convertMember)
+    val relations = clazz.fields.filter { !isBasicField(it) }.map { convertRelationalField(it) }
 
     val methods = clazz.methods.map(::convertMember)
 

@@ -30,8 +30,17 @@
     </extensions>
     <actions>
         <action id="org.nbfalcon.javagenplantuml.actions.GenUMLAction"
-                class="org.nbfalcon.javagenplantuml.actions.GenUMLAction" text="Copy File as PlantUML"
-                description="Export the currently selected file (Java) to PlantUML (clipboard)"
-                icon="org.nbfalcon.javagenplantuml.Icons.PlantUML"/>
+                class="org.nbfalcon.javagenplantuml.actions.GenUMLAction" text="Copy as PlantUML"
+                description="Copy the currently selected Java element(s) as PlantUML source"
+                icon="org.nbfalcon.javagenplantuml.Icons.PlantUML">
+            <add-to-group group-id="CutCopyPasteGroup" anchor="after" relative-to-action="$Paste"/>
+        </action>
+        <action id="org.nbfalcon.javagenplantuml.actions.GenImageAction"
+                class="org.nbfalcon.javagenplantuml.actions.GenImageAction" text="Copy as PlantUML Image"
+                description="Export the selected java element(s) as a PlantUML-generated diagram "
+                icon="org.nbfalcon.javagenplantuml.Icons.PlantUML">
+            <add-to-group group-id="CutCopyPasteGroup" anchor="after"
+                          relative-to-action="org.nbfalcon.javagenplantuml.actions.GenUMLAction"/>
+        </action>
     </actions>
 </idea-plugin>

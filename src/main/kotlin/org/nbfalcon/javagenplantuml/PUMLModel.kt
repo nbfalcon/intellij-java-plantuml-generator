@@ -98,6 +98,6 @@ class UMLClass(
         if (relationsS.isNotEmpty()) relationsS = "\n" + relationsS
         if (inheritanceS.isNotEmpty()) inheritanceS = "\n" + inheritanceS
 
-        return "$prefix \"$name\" {\n$attributesS$methodsS}$relationsS$inheritanceS\n"
+        return "$prefix \"$name\" {\n$attributesS$methodsS}$inheritanceS$relationsS\n"
     }
 }

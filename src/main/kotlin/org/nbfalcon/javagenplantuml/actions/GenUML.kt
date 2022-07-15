@@ -1,10 +1,6 @@
 package org.nbfalcon.javagenplantuml.actions
 
-import com.intellij.openapi.actionSystem.ActionPlaces
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.CommonDataKeys
-import com.intellij.openapi.actionSystem.LangDataKeys
+import com.intellij.openapi.actionSystem.*
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
@@ -12,13 +8,20 @@ import com.intellij.psi.PsiJavaFile
 import com.intellij.psi.PsiPackage
 import com.intellij.psi.impl.file.PsiJavaDirectoryImpl
 import com.intellij.psi.util.parentOfType
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream
+import net.sourceforge.plantuml.FileFormat
+import net.sourceforge.plantuml.FileFormatOption
+import net.sourceforge.plantuml.SourceStringReader
 import org.nbfalcon.javagenplantuml.UMLClass
 import org.nbfalcon.javagenplantuml.javaPsi2UML
+import org.nbfalcon.javagenplantuml.util.ImageSelection
 import org.nbfalcon.javagenplantuml.util.traverseDfs
 import java.awt.datatransfer.StringSelection
+import java.io.ByteArrayOutputStream
+import javax.imageio.ImageIO
 
-class GenUMLAction : AnAction() {
-    override fun actionPerformed(e: AnActionEvent) {
+abstract class PlantUMLActionBase : AnAction() {
+    fun generatePlantUML(e: AnActionEvent): String {
         val elements = getElementsToConsider(e)
 
         val umls = mutableListOf<UMLClass>()
@@ -42,15 +45,15 @@ class GenUMLAction : AnAction() {
 
             when (elem) {
                 is PsiPackage -> elem.subPackages
-                is PsiJavaDirectoryImpl -> elem.files.filterIsInstance<PsiJavaFile>().toTypedArray<PsiElement>() + elem.subdirectories
+                is PsiJavaDirectoryImpl -> elem.files.filterIsInstance<PsiJavaFile>()
+                    .toTypedArray<PsiElement>() + elem.subdirectories
                 else -> null
             }
         }
 
         val umlS = umls.joinToString("\n") { uml -> uml.toPlantUML() }
-        val src = "@startuml\n\n$umlS\n@enduml\n"
 
-        CopyPasteManager.getInstance().setContents(StringSelection(src))
+        return "@startuml\n\n$umlS\n@enduml\n"
     }
 
     override fun update(e: AnActionEvent) {
@@ -68,6 +71,26 @@ class GenUMLAction : AnAction() {
         return javaElements.ifEmpty {
             val elem = e.getData(CommonDataKeys.PSI_ELEMENT)?.parentOfType<PsiClass>(true)
             if (elem != null) listOf(elem) else listOf()
+        }
+    }
+}
+
+class GenUMLAction : PlantUMLActionBase() {
+    override fun actionPerformed(e: AnActionEvent) {
+        CopyPasteManager.getInstance().setContents(StringSelection(generatePlantUML(e)))
+    }
+}
+
+class GenImageAction : PlantUMLActionBase() {
+    override fun actionPerformed(e: AnActionEvent) {
+        val src = generatePlantUML(e)
+
+        val out = ByteArrayOutputStream()
+        SourceStringReader(src).generateImage(out, FileFormatOption(FileFormat.PNG))
+
+        if (out.size() != 0) {
+            val image = ImageIO.read(ByteArrayImageInputStream(out.toByteArray()))
+            CopyPasteManager.getInstance().setContents(ImageSelection(image))
         }
     }
 }
