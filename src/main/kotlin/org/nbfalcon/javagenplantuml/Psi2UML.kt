@@ -1,6 +1,7 @@
 package org.nbfalcon.javagenplantuml
 
 import com.intellij.psi.*
+import com.intellij.psi.PsiModifier.ModifierConstant
 
 val PsiType.presentableCanonicalText: String
     get() = canonicalText.removePrefix("java.lang.")
@@ -26,16 +27,11 @@ val PsiMethod.declarationSignature: String
         return "$ret$name$generics($args)"
     }
 
+fun PsiModifierListOwner.hasProperty(@ModifierConstant property: String) =
+    modifierList?.hasModifierProperty(property) == true
+
 fun convertMember(m: PsiMember): UMLAttribute {
     val visibility = m.visibility
-
-    val modifier = m.modifierList?.let { mL ->
-        when {
-            mL.hasModifierProperty(PsiModifier.STATIC) -> UMLAttribute.Modifier.STATIC
-            mL.hasModifierProperty(PsiModifier.ABSTRACT) -> UMLAttribute.Modifier.ABSTRACT
-            else -> null
-        }
-    } ?: UMLAttribute.Modifier.NONE
 
     val text = when (m) {
         is PsiMethod -> m.declarationSignature
@@ -43,7 +39,12 @@ fun convertMember(m: PsiMember): UMLAttribute {
         else -> throw IllegalArgumentException("$m is not a method or field")
     }
 
-    return UMLAttribute(visibility, modifier, text)
+    return UMLAttribute(
+        text, visibility,
+        isStatic = m.hasProperty(PsiModifier.STATIC),
+        isAbstract = m.hasProperty(PsiModifier.ABSTRACT),
+        isFinal = m.hasProperty(PsiModifier.FINAL)
+    )
 }
 
 val PsiArrayType.deArray: PsiType

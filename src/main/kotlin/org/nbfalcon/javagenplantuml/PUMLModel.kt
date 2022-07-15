@@ -6,21 +6,27 @@ interface UMLElem {
     fun toPlantUML(): String
 }
 
-class UMLAttribute(private val access: Access, private val modifier: Modifier, private val identifier: String) : UMLElem {
+fun StringBuilder.appendWithSpace(appendMe: String): StringBuilder =
+    if (isNotEmpty()) {
+        append(' ').append(appendMe)
+    } else {
+        append(appendMe)
+    }
+
+class UMLAttribute(
+    private val identifier: String, private val access: Access,
+    private val isStatic: Boolean, private val isAbstract: Boolean, private val isFinal: Boolean
+) : UMLElem {
     enum class Access {
         PUBLIC, PRIVATE, PACKAGE_PRIVATE, PROTECTED
     }
 
-    enum class Modifier {
-        NONE, ABSTRACT, STATIC
-    }
-
     override fun toPlantUML(): String {
-        val modifierS = when (modifier) {
-            Modifier.NONE -> ""
-            Modifier.ABSTRACT -> "{abstract} "
-            Modifier.STATIC -> "{static} "
-        }
+        val modifier = StringBuilder()
+
+        if (isStatic) modifier.appendWithSpace("{static}")
+        if (isAbstract) modifier.appendWithSpace("{abstract}")
+
         val accessS = when (access) {
             Access.PUBLIC -> "+"
             Access.PRIVATE -> "-"
@@ -28,7 +34,11 @@ class UMLAttribute(private val access: Access, private val modifier: Modifier, p
             Access.PROTECTED -> "#"
         }
 
-        return accessS + modifierS + identifier
+        var lhs = accessS + modifier + identifier
+
+        if (isFinal) lhs += " {readOnly}"
+
+        return lhs
     }
 }
 
